@@ -1,5 +1,3 @@
-com\exemplo\app\App.class
-com\exemplo\app\Graph.class
 com\exemplo\app\App$Graph.class
+com\exemplo\app\App.class
 com\exemplo\app\App$Edge.class
-com\exemplo\app\Graph$Edge.class
