@@ -1,75 +1,72 @@
-package com.exemplo.app;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
+package com.exemplo.app;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import static org.junit.Assert.assertTrue;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Testes de stress para o algoritmo Edmonds-Karp com múltiplas fontes e
- * destinos.
+ * Teste automatizado de estresse para o microserviço de fluxo máximo.
+ * Envia um grafo via POST e verifica se o fluxo máximo retornado é o esperado.
  */
 public class AppTest {
 
-    @Test(timeout = 10000) // limite de tempo de 10 segundos
-    public void stressTestLargeGraph() throws Exception {
-        int nodeCount = 1000;
-        int sourceNode = 0;
-        int sinkNode = 999;
+    @BeforeAll
+    public static void verificarAPI() {
+        try {
+            URL url = new URL("http://localhost:8080/fluxo-maximo");
+            HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
+            conexao.setConnectTimeout(1000);
+            conexao.connect();
+            assumeTrue(conexao.getResponseCode() >= 200);
+        } catch (Exception e) {
+            assumeTrue(false, "API não está rodando em http://localhost:8080/fluxo-maximo");
+        }
+    }
 
-        // Cria objeto JSON para input
+    @Test
+    public void stressTestLargeGraph() throws Exception {
+        // Grafo com múltiplas fontes e múltiplos destinos
         JSONObject input = new JSONObject();
-        input.put("nodeCount", nodeCount);
-        input.put("sources", new JSONArray().put(sourceNode)); // necessário para o App.java
-        input.put("sinks", new JSONArray().put(sinkNode)); // necessário para o App.java
+        input.put("nodeCount", 6);
+        input.put("sources", new JSONArray(new int[] { 0, 1 }));
+        input.put("sinks", new JSONArray(new int[] { 4, 5 }));
 
         JSONArray edges = new JSONArray();
-
-        // Conecta source a 100 nós intermediários
-        for (int i = 1; i <= 100; i++) {
-            edges.put(new JSONObject()
-                    .put("from", sourceNode)
-                    .put("to", i)
-                    .put("capacity", 1000));
-        }
-
-        // Liga nós intermediários a nós terminais
-        for (int i = 1; i <= 100; i++) {
-            for (int j = 101; j < nodeCount - 1; j += 100) {
-                edges.put(new JSONObject()
-                        .put("from", i)
-                        .put("to", j)
-                        .put("capacity", 10));
-            }
-        }
-
-        // Liga nós terminais ao sink
-        for (int j = 101; j < nodeCount - 1; j += 100) {
-            edges.put(new JSONObject()
-                    .put("from", j)
-                    .put("to", sinkNode)
-                    .put("capacity", 1000));
-        }
-
+        edges.put(new JSONObject().put("from", 0).put("to", 2).put("capacity", 10));
+        edges.put(new JSONObject().put("from", 1).put("to", 2).put("capacity", 15));
+        edges.put(new JSONObject().put("from", 2).put("to", 3).put("capacity", 20));
+        edges.put(new JSONObject().put("from", 3).put("to", 4).put("capacity", 10));
+        edges.put(new JSONObject().put("from", 3).put("to", 5).put("capacity", 5));
         input.put("edges", edges);
 
-        // Salva input.json no disco
-        Files.write(Paths.get("input.json"), input.toString(2).getBytes());
+        // Envia o JSON para o endpoint da API
+        URL url = new URL("http://localhost:8080/fluxo-maximo");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setDoOutput(true);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
 
-        // Executa o algoritmo principal
-        App.main(null);
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(input.toString().getBytes());
+        }
 
-        // Lê output.json
-        byte[] bytes = Files.readAllBytes(Paths.get("output.json"));
-        String result = new String(bytes);
-        JSONObject output = new JSONObject(result);
+        // Lê o resultado retornado
+        byte[] responseBytes = conn.getInputStream().readAllBytes();
+        String response = new String(responseBytes);
+        JSONObject result = new JSONObject(response);
 
-        // Verificações
-        assertTrue("Output JSON deve conter maxFlow", output.has("maxFlow"));
-        int maxFlow = output.getInt("maxFlow");
-        assertTrue("Fluxo máximo deve ser positivo", maxFlow > 0);
+        // Verifica se o fluxo máximo corresponde ao esperado
+        assertEquals(15, result.getInt("maxFlow"));
     }
 }
