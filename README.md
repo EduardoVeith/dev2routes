@@ -26,14 +26,9 @@ A API estará disponível em: `http://localhost:8080/fluxo-maximo`
 
 ### Opção 2: Via Docker
 
-```bash
-docker build -t fluxo-maximo-api .
-docker run -p 8080:8080 fluxo-maximo-api
-```
-
 ## Exemplo de Requisição (Insomnia/Postman)
 
-**POST** `http://localhost:8080/fluxo-maximo`
+**POST** `https://fluxo-maximo-api.onrender.com`
 
 ```json
 {
