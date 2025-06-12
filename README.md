@@ -24,7 +24,7 @@ java -jar target/app.jar
 
 A API estará disponível em: `http://localhost:8080/fluxo-maximo`
 
-### Opção 2: Via Docker
+### Opção 2: Requisitar a versão do Deploy
 
 ## Exemplo de Requisição (Insomnia/Postman)
 
