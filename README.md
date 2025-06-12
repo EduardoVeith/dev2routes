@@ -28,7 +28,7 @@ A API estará disponível em: `http://localhost:8080/fluxo-maximo`
 
 ## Exemplo de Requisição (Insomnia/Postman)
 
-**POST** `https://fluxo-maximo-api.onrender.com`
+**POST** `https://fluxo-maximo-api.onrender.com/fluxo-maximo`
 
 ```json
 {
